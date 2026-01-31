@@ -37,10 +37,10 @@ export  async function updateUser(data) {
                             salaryRanges: [],  // Array of { role: string, min: float, max: float, median: float, location: string? }
                             // Industry trends
                             growthRate: 0,      // Industry growth rate
-                            demandLevel: "Medium",     // "High", "Medium", "Low"
+                            demandLevel: "MEDIUM",     // "High", "Medium", "Low"
                             topSkills: [],  // Most in-demand skills
                             // Market conditions
-                            marketOutlook: "Neutral",  // "Positive", "Neutral", "Negative"
+                            marketOutlook: "NEUTRAL",  // "Positive", "Neutral", "Negative"
                             keyTrends: [],  // Array of current industry trends
                             // Learning suggestions
                             recommendedSkills: [], // Skills recommended for the industry
@@ -63,10 +63,10 @@ export  async function updateUser(data) {
                 return { updatedUser, industryInsight }
             },
             {
-                timeout: 1000,
+                timeout: 10000,
             }
         )
-        return result.user
+        return { success: true , ...result}
     }
     catch (error) {
         console.error("Error updating user and industry:", error.message);
