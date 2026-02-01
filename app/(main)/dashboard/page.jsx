@@ -1,15 +1,19 @@
 import React from 'react'
 import {getOnboardingStatus} from '@/actions/user'
 import { redirect } from 'next/navigation'
+import { getIndustryInsights } from '@/actions/dashboard'
+import DashboardView from './_components/DashboardView'
 
-const page = () => {
-  const {isOnboarded} = getOnboardingStatus()
+const page = async () => {
+  const {isOnboarded} = await getOnboardingStatus()
   if(!isOnboarded) {
     redirect("/onboarding")
   }
+   const insights = await getIndustryInsights();
+
   return (
-    <div className='text-white text-9xl p-50'>
-      Dashboard Page
+    <div className="container mx-auto">
+      <DashboardView insights={insights}/>
     </div>
   )
 }
