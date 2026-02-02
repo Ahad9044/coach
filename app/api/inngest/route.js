@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/injest/client";
-import { helloWorld } from "@/lib/injest/functions";
+import { generateIndustryInsights, helloWorld } from "@/lib/injest/functions";
 import { serve } from "inngest/next";
 
 
@@ -8,6 +8,6 @@ export const { GET, POST, PUT } = serve({
   client: inngest,
   functions: [
     /* your functions will be passed here later! */
-    helloWorld,
+   generateIndustryInsights
   ],
 });
