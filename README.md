@@ -12,7 +12,7 @@ Sensei Live Application - 🔗 https://coach-d2gw.vercel.app/
 ## Clone the Repository
 
 ```bash
-git clone [<repository-url>](https://github.com/Ahad9044/coach.git)
+git clone https://github.com/Ahad9044/coach.git
 
 ```
 
