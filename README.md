@@ -44,52 +44,77 @@ Features
 ✅ Real-time form validation </br>
 ✅ Reusable resume templates </br>
 
-#### Engineering Architecture
+#### Application Flow
 
-  
-    ┌────────────────────┐
-    │   User Input Layer │
-    │ Resume Details Form│
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ Validation Layer   │
-    │ React Hook Form +  │
-    │ Zod Schema Checks  │
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ Prompt Builder     │
-    │ Context Injection  │
-    │ Structured Prompt  │
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ Gemini AI Engine   │
-    │ JSON Response Gen  │
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ Response Parser    │
-    │ Schema Validation  │
-    │ Error Handling     │
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ Markdown Compiler  │
-    │ Dynamic Templates  │
-    └─────────┬──────────┘
-              │
-              ▼
-    ┌────────────────────┐
-    │ PDF Rendering Layer│
-    │ html2pdf Export    │
-    └────────────────────┘
+
+~~~
+┌────────────────────┐
+│    User Access     │
+│ Login / Dashboard  │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Authentication     │
+│ Clerk Session Auth │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Frontend Modules   │
+│ Resume / Interview │
+│ Cover Letter / UI  │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Form Management    │
+│ React Hook Form    │
+│ + Zod Validation   │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Prompt Builder     │
+│ Context Injection  │
+│ Structured Prompts │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Gemini AI Engine   │
+│ AI Content Gen     │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Response Parser    │
+│ JSON Validation    │
+│ Error Handling     │
+└─────────┬──────────┘
+          │
+          ├──────────────┐
+          ▼              ▼
+┌────────────────┐  ┌────────────────┐
+│ NeonDB Storage │  │ PDF Generation │
+│ Prisma ORM     │  │ html2pdf       │
+└────────┬───────┘  └────────────────┘
+         │
+         ▼
+┌────────────────────┐
+│ Dashboard &        │
+│ Analytics Layer    │
+│ Recharts Insights  │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Background Jobs    │
+│ Inngest Cron Tasks │
+│ Industry Insights  │
+└────────────────────┘
+
+~~~
 
 #### Technical Highlights
 Built schema-driven prompt orchestration for deterministic AI outputs
@@ -103,43 +128,27 @@ A contextual interview engine that dynamically generates role-specific interview
 
 Features
 
-✅ Skill-aware questioning
-✅ Dynamic interview generation
-✅ AI-powered performance evaluation
-✅ Analytical scoring dashboards
-✅ Real-time session feedback
+✅ Skill-aware questioning  </br>
+✅ Dynamic interview generation  </br>
+✅ AI-powered performance evaluation  </br>
+✅ Analytical scoring dashboards  </br>
+✅ Real-time session feedback  </br>
 
 AI Workflow
 
-  
-                  ┌──────────────────┐
-                │   User Input     │
-                │ Skills / Resume  │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │ Prompt Builder   │
-                │ Context + Rules  │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │   Gemini API     │
-                │  AI Generation   │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │ Response Parser  │
-                │ JSON Validation  │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │ UI Rendering     │
-                │ Resume / Insights│
-                └──────────────────┘
+ ~~~ 
+ User Input
+   ↓
+Structured Prompt Builder
+   ↓
+Gemini AI Generation
+   ↓
+Response Parsing & Validation
+   ↓
+Frontend Rendering
+   ↓
+Resume / Insights Output
+~~~
                                               
 #### Engineering Highlights
 Designed reusable interview orchestration pipeline </br>
@@ -153,28 +162,12 @@ An asynchronous background-processing system delivering weekly career intelligen
 
 Features
 
-✅ Salary trend tracking
-✅ Industry demand analysis
-✅ Automated weekly insights
-✅ Cached market intelligence
-✅ Skill trend monitoring
+✅ Salary trend tracking </br>
+✅ Industry demand analysis  </br>
+✅ Automated weekly insights  </br>
+✅ Cached market intelligence  </br>
+✅ Skill trend monitoring  </br>
 
-```text
-        Weekly Cron Job
-                ↓
-        Inngest Workflow
-                ↓
-      Background Processing
-      (Salary & Skill Trends)
-                ↓
-         Gemini Analysis
-                ↓
-       PostgreSQL Storage
-                ↓
-        Cached API Layer
-                ↓
-           Frontend UI
-```
 ## Scalability Engineering
 
 Architected event-driven cron workflows using Inngest
@@ -182,40 +175,50 @@ Minimized API overhead using scheduled caching
 Improved frontend response latency significantly
 Decoupled compute-heavy operations from UI rendering
 
-## ✉️ Context-Aware Cover Letter Generator
-
-AI-powered personalized cover letter generation engine.
-
-Features
-
-✅ Job-description-aware generation </br>
-✅ Personalized tone adaptation  </br>
-✅ Structured formatting pipeline  </br>
-✅ Reusable prompt architecture  </br>
 
 ## AI Engineering
 Built contextual prompt injection pipelines
 Optimized generation consistency using schema enforcement
 Reduced hallucinations with structured generation constraints
 
+ ## System design of the Application 
+
 ```mermaid
 flowchart TD
 
-    A[Client / Browser] --> B[Next.js Frontend]
+    A[User Client / Browser]
+        --> B[Next.js Frontend]
 
     B --> C[Clerk Authentication]
 
-    C --> D[Server Actions / API Layer]
+    C --> D[Onboarding Module]
+    C --> E[Resume Module]
+    C --> F[Interview Module]
+    C --> G[Dashboard Module]
+    C --> H[AI Cover Letter Module]
 
-    D --> E[Gemini AI Services]
-    D --> F[(Neon PostgreSQL)]
-    D --> G[Prisma ORM]
+    D --> I[(Neon PostgreSQL)]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
 
-    D --> H[Inngest Background Jobs]
+    E --> J[Gemini AI]
+    F --> J
+    G --> J
+    H --> J
 
-    H --> I[Async Workers / Cron Jobs]
+    K[Inngest Cron Jobs]
+        --> L[Background Workers]
 
-    I --> F
+    L --> J
+    L --> I
 
-    F --> J[Dashboard / Resume / Analytics UI]
+    I --> M[Processed Data / AI Responses]
+
+    J --> M
+
+    M --> B
+
+    B --> A
 ```
