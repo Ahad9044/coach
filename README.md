@@ -6,7 +6,49 @@
 
 ## 🌐 Live Demo
 Sensei Live Application - 🔗 https://coach-d2gw.vercel.app/
- 
+
+# ⚙️ Running Locally
+
+## Clone the Repository
+
+```bash
+git clone [<repository-url>](https://github.com/Ahad9044/coach.git)
+
+```
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
+## Configure Environment Variables
+
+Create a `.env` file in the root directory and add:
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY= your clerk key
+CLERK_SECRET_KEY= your clerk key
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/onboarding
+
+DATABASE_URL='your database url'
+GEMINI_API_KEY =  your gemini api key
+```
+
+## Run Development Server
+
+```bash
+npm run dev
+```
+
+Application will be available at:
+
+```bash
+http://localhost:3000
+```
 
 ## ✨ Product Vision
 
