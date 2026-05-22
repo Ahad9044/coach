@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/injest/client";
-import { generateIndustryInsights, helloWorld } from "@/lib/injest/functions";
+import { generateIndustryInsights } from "@/lib/injest/functions";
 import { serve } from "inngest/next";
 
 
