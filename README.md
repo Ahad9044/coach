@@ -49,63 +49,139 @@ An AI-powered career intelligence platform that unifies resume building, intervi
 
 ## Architecture
 
-Sensei follows a **Next.js App Router** pattern: UI routes under `app/`, business logic in **Server Actions** (`actions/`), shared utilities in `lib/`, and Prisma for persistence. AI calls use structured JSON prompts; responses are parsed and stored in PostgreSQL.
+Sensei uses the **Next.js App Router** with **Server Actions** for mutations and AI, **React Server Components** for initial data loading, and **Prisma** for PostgreSQL. Clerk handles identity; Gemini handles generation; Inngest runs scheduled jobs outside the browser.
+
+### Component overview
+
+How the major pieces relate (not request order):
 
 ```mermaid
-flowchart TD
+flowchart LR
     subgraph Client
-        A[Browser]
+        BR[Browser]
     end
 
-    subgraph Next.js
-        B[App Router pages / layouts]
-        C[Server Actions]
-        D[proxy.js — Clerk auth]
-        E["/api/inngest — Inngest serve"]
+    subgraph NextJS[Next.js app]
+        MW[proxy.js]
+        AR[App Router<br/>RSC + client components]
+        SA[Server Actions<br/>actions/*]
+        API["/api/inngest"]
+        CU[checkUser<br/>via Header]
     end
 
-    subgraph External
-        F[Clerk]
-        G[Gemini 2.5 Pro]
+    subgraph Services
+        CL[Clerk]
+        GM[Gemini 2.5 Pro]
+        ING[Inngest platform]
     end
 
     subgraph Data
-        H[(PostgreSQL / Neon)]
-        I[Prisma Client — lib/prisma.js]
+        PR[Prisma<br/>lib/prisma.js]
+        DB[(PostgreSQL / Neon)]
     end
 
-    subgraph Background
-        J[Inngest cron — Sundays 00:00]
-        K[generateIndustryInsights]
-    end
+    BR --- MW
+    MW --- CL
+    AR --- SA
+    AR --- CU
+    CU --- CL
+    CU --- PR
+    SA --- CL
+    SA --- GM
+    SA --- PR
+    ING --- API
+    PR --- DB
 
-    A --> B
-    B --> D
-    D --> F
-    B --> C
-    C --> I
-    I --> H
-    C --> G
-    G --> C
-    E --> J
-    J --> K
-    K --> G
-    K --> I
+    FN[generateIndustryInsights]
+    API --> FN
+    FN --> GM
+    FN --> PR
 ```
 
-### Request flow (typical AI feature)
+### User request flow
 
-1. User submits a form on a client component (React Hook Form + Zod).
-2. Client invokes a **Server Action** in `actions/` (auth via Clerk `auth()`).
-3. Action builds a structured prompt, calls Gemini, strips markdown fences, and `JSON.parse`s the result.
-4. Result is persisted with Prisma and paths are revalidated where needed.
-5. UI refreshes with server-rendered or client state.
+Every page load and mutation follows this order. **Middleware runs before the route renders** — it does not sit “under” pages in the stack.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant M as proxy.js
+    participant C as Clerk
+    participant L as Root layout + Header
+    participant P as App Router page
+    participant A as Server Actions
+    participant G as Gemini
+    participant D as Prisma / Neon
+
+    B->>M: HTTP request
+    M->>C: Resolve session (clerkMiddleware)
+    alt Protected route, unsigned
+        M-->>B: Redirect to /sign-in
+    else Request continues
+        M->>L: Render layout
+        L->>C: currentUser()
+        L->>D: checkUser — find or create User row
+        M->>P: Render route (RSC)
+        opt Page needs data on load
+            P->>A: Server Action (SSR), e.g. getResume, getIndustryInsights
+            A->>C: auth()
+            A->>D: Query
+            D-->>P: Props to client components
+        end
+        opt User submits form / quiz / save
+            P->>A: Server Action (client call), e.g. saveResume, generateQuiz
+            A->>C: auth()
+            A->>G: Structured JSON prompt
+            G-->>A: Model response
+            A->>D: Parse JSON, upsert / update
+            A-->>P: Result + revalidatePath
+        end
+        P-->>B: HTML / RSC payload
+    end
+```
+
+**Two ways Server Actions are invoked:**
+
+| Path | Example | When |
+|------|---------|------|
+| **SSR** | `getResume()`, `getIndustryInsights()`, `getAssessments()` | Server Component `page.jsx` awaits the action during render |
+| **Client** | `saveResume()`, `generateQuiz()`, `updateUser()` | Client component calls action via `useFetch` or direct import after user interaction |
+
+PDF export (`ResumePDF`, `html2pdf.js`) runs **entirely in the browser** and does not call Gemini or the database.
+
+### Background job flow (Inngest)
+
+The cron does **not** start inside your app. **Inngest’s scheduler** calls your app at the registered endpoint; `serve()` in `app/api/inngest/route.js` dispatches `generateIndustryInsights`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant I as Inngest platform
+    participant API as GET/POST /api/inngest
+    participant F as generateIndustryInsights
+    participant G as Gemini
+    participant D as Prisma / Neon
+
+    Note over I: Cron: 0 0 * * 0 (Sunday midnight)
+    I->>API: Invoke registered function
+    API->>F: Run Inngest steps
+    F->>D: industryInsight.findMany
+    loop Each industry
+        F->>G: Industry analysis prompt
+        G-->>F: JSON insights
+        F->>D: industryInsight.update
+    end
+```
+
+Onboarding can also refresh insights **on demand** (no Inngest): `updateUser` → `generateAIInsights` → create `IndustryInsight` if missing — same Gemini + Prisma pattern as dashboard cache-miss handling.
 
 ### Auth & onboarding
 
-- `proxy.js` protects: `/dashboard`, `/resume`, `/ai-cover-letter`, `/onboarding`.
-- `lib/checkUser.js` syncs Clerk users into the `User` table on each request (via `Header`).
-- After sign-in/up, Clerk redirects to `/onboarding`; completed profiles redirect to `/dashboard`.
+- `proxy.js` protects: `/dashboard`, `/resume`, `/ai-cover-letter`, `/onboarding` (redirects unsigned users to Clerk sign-in).
+- `/interview` is **not** in the middleware matcher; routes still require a Clerk session inside Server Actions (`auth()` throws if missing).
+- `lib/checkUser.js` runs from `Header` on every layout render and syncs the Clerk user into the `User` table.
+- Clerk env redirects after sign-in/up → `/onboarding`; onboarded users hitting `/onboarding` redirect to `/dashboard`.
 
 ---
 
