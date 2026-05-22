@@ -49,12 +49,6 @@ An AI-powered career intelligence platform that unifies resume building, intervi
 
 ## Architecture
 
-Sensei uses the **Next.js App Router** with **Server Actions** for mutations and AI, **React Server Components** for initial data loading, and **Prisma** for PostgreSQL. Clerk handles identity; Gemini handles generation; Inngest runs scheduled jobs outside the browser.
-
-### Component overview
-
-How the major pieces relate (not request order):
-
 ```mermaid
 flowchart LR
     subgraph Client
@@ -98,90 +92,7 @@ flowchart LR
     FN --> PR
 ```
 
-### User request flow
-
-Every page load and mutation follows this order. **Middleware runs before the route renders** — it does not sit “under” pages in the stack.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant B as Browser
-    participant M as proxy.js
-    participant C as Clerk
-    participant L as Root layout + Header
-    participant P as App Router page
-    participant A as Server Actions
-    participant G as Gemini
-    participant D as Prisma / Neon
-
-    B->>M: HTTP request
-    M->>C: Resolve session (clerkMiddleware)
-    alt Protected route, unsigned
-        M-->>B: Redirect to /sign-in
-    else Request continues
-        M->>L: Render layout
-        L->>C: currentUser()
-        L->>D: checkUser — find or create User row
-        M->>P: Render route (RSC)
-        opt Page needs data on load
-            P->>A: Server Action (SSR), e.g. getResume, getIndustryInsights
-            A->>C: auth()
-            A->>D: Query
-            D-->>P: Props to client components
-        end
-        opt User submits form / quiz / save
-            P->>A: Server Action (client call), e.g. saveResume, generateQuiz
-            A->>C: auth()
-            A->>G: Structured JSON prompt
-            G-->>A: Model response
-            A->>D: Parse JSON, upsert / update
-            A-->>P: Result + revalidatePath
-        end
-        P-->>B: HTML / RSC payload
-    end
-```
-
-**Two ways Server Actions are invoked:**
-
-| Path | Example | When |
-|------|---------|------|
-| **SSR** | `getResume()`, `getIndustryInsights()`, `getAssessments()` | Server Component `page.jsx` awaits the action during render |
-| **Client** | `saveResume()`, `generateQuiz()`, `updateUser()` | Client component calls action via `useFetch` or direct import after user interaction |
-
-PDF export (`ResumePDF`, `html2pdf.js`) runs **entirely in the browser** and does not call Gemini or the database.
-
-### Background job flow (Inngest)
-
-The cron does **not** start inside your app. **Inngest’s scheduler** calls your app at the registered endpoint; `serve()` in `app/api/inngest/route.js` dispatches `generateIndustryInsights`.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant I as Inngest platform
-    participant API as GET/POST /api/inngest
-    participant F as generateIndustryInsights
-    participant G as Gemini
-    participant D as Prisma / Neon
-
-    Note over I: Cron: 0 0 * * 0 (Sunday midnight)
-    I->>API: Invoke registered function
-    API->>F: Run Inngest steps
-    F->>D: industryInsight.findMany
-    loop Each industry
-        F->>G: Industry analysis prompt
-        G-->>F: JSON insights
-        F->>D: industryInsight.update
-    end
-```
-
-Onboarding can also refresh insights **on demand** (no Inngest): `updateUser` → `generateAIInsights` → create `IndustryInsight` if missing — same Gemini + Prisma pattern as dashboard cache-miss handling.
-
-### Auth & onboarding
-
-- `proxy.js` protects: `/dashboard`, `/resume`, `/ai-cover-letter`, `/onboarding` (redirects unsigned users to Clerk sign-in).
-- `/interview` is **not** in the middleware matcher; routes still require a Clerk session inside Server Actions (`auth()` throws if missing).
-- `lib/checkUser.js` runs from `Header` on every layout render and syncs the Clerk user into the `User` table.
-- Clerk env redirects after sign-in/up → `/onboarding`; onboarded users hitting `/onboarding` redirect to `/dashboard`.
+**Auth:** Clerk sign-in → `/onboarding` → `/dashboard` · Protected routes: `/dashboard`, `/resume`, `/ai-cover-letter`, `/onboarding`
 
 ---
 
